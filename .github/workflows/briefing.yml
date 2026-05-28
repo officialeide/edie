@@ -2,14 +2,14 @@ yamlname: Daily Briefing
 
 on:
   schedule:
-    - cron: '0 22 * * *'  # 한국시간 오전 7시
+    - cron: '50 23 * * *'  # 매일 한국시간 오전 8시 50분 (UTC 23:50)
   workflow_dispatch:
 
 jobs:
   briefing:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # 파일 커밋 권한
+      contents: write
 
     steps:
       - name: Checkout
