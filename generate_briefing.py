@@ -1,11 +1,27 @@
 pythonimport anthropic
 import json
 import os
+import sys
 from datetime import datetime
 
-client = anthropic.Anthropic(api_key=os.environ["CLAUDE_API_KEY"])
-
 today = datetime.now().strftime("%Y년 %m월 %d일")
+
+# 주말 체크 (토=5, 일=6)
+weekday = datetime.now().weekday()
+if weekday >= 5:
+    briefing = {
+        "date": today,
+        "content": "오늘은 쉬어요 ☕\n\n주말에는 시장이 열리지 않아요.\n월요일에 다시 만나요.",
+        "updated": datetime.now().strftime("%H:%M"),
+        "is_weekend": True
+    }
+    with open("briefing.json", "w", encoding="utf-8") as f:
+        json.dump(briefing, f, ensure_ascii=False, indent=2)
+    print("주말 — 브리핑 스킵")
+    sys.exit(0)
+
+# 평일만 실행
+client = anthropic.Anthropic(api_key=os.environ["CLAUDE_API_KEY"])
 
 SYSTEM_PROMPT = """
 너는 한국 주식 투자자를 위한 거시경제 및 시장 브리핑 전문가야.
@@ -85,22 +101,17 @@ def run_briefing():
             messages=messages
         )
 
-        # assistant 응답 메시지 추가
         messages.append({
             "role": "assistant",
             "content": response.content
         })
 
-        # 종료 조건: tool_use 없으면 루프 탈출
         if response.stop_reason != "tool_use":
             break
 
-        # tool_use 블록 처리 — 웹서치 결과를 tool_result로 반환
         tool_results = []
         for block in response.content:
             if block.type == "tool_use":
-                # 실제 검색은 Anthropic 서버에서 처리됨
-                # tool_result는 빈 content로 반환하면 자동으로 결과 주입됨
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": block.id,
@@ -112,7 +123,6 @@ def run_briefing():
             "content": tool_results
         })
 
-    # 최종 텍스트 추출
     full_text = "\n".join(
         block.text for block in response.content
         if hasattr(block, "text")
@@ -121,13 +131,13 @@ def run_briefing():
     return full_text
 
 
-# 실행
 briefing_content = run_briefing()
 
 briefing = {
     "date": today,
     "content": briefing_content,
-    "updated": datetime.now().strftime("%H:%M")
+    "updated": datetime.now().strftime("%H:%M"),
+    "is_weekend": False
 }
 
 with open("briefing.json", "w", encoding="utf-8") as f:
