@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Summary</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪷</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Noto+Serif+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #EDF2EB;
+  --card:     rgba(250,253,249,0.75);
+  --card-b:   rgba(245,251,254,0.72);
+  --ink:      #243020;
+  --ink2:     #3E5242;
+  --muted:    #829080;
+  --line:     rgba(170,205,175,0.38);
+  --green:    #5A8060;
+  --green-d:  #3E6044;
+  --green-bg: rgba(190,220,195,0.28);
+  --blue:     #4A7888;
+  --blue-bg:  rgba(170,205,218,0.25);
+  --red:      #B03428;
+  --yellow:   #9A7010;
+  --radius:   18px;
+  --gap:      14px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  height: 100vh; overflow: hidden;
+  background: linear-gradient(145deg,#E4EDE1 0%,#DCE8EE 55%,#E2EDE0 100%);
+  font-family: 'Noto Serif KR', serif;
+  color: var(--ink);
+  display: flex;
+  padding: 18px;
+  gap: 14px;
+}
+
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background:
+    radial-gradient(ellipse at 10% 25%, rgba(140,190,150,0.14) 0%, transparent 50%),
+    radial-gradient(ellipse at 88% 75%, rgba(120,175,195,0.12) 0%, transparent 50%);
+}
+
+/* ── 사이드바 */
+.sidebar {
+  width:72px; flex-shrink:0; position:relative; z-index:1;
+  background: linear-gradient(180deg,rgba(215,234,218,0.82) 0%,rgba(200,222,230,0.80) 100%);
+  border-radius: var(--radius);
+  border: 1px solid rgba(185,215,192,0.55);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  display:flex; flex-direction:column; align-items:center;
+  padding: 18px 0 18px;
+}
+
+.sidebar-links {
+  display:flex; flex-direction:column; align-items:center;
+  gap:2px; width:100%; padding:0 6px;
+}
+
+.sidebar-link {
+  display:flex; flex-direction:column; align-items:center;
+  gap:4px; text-decoration:none;
+  padding:9px 4px; border-radius:12px; width:100%;
+  transition:background 0.2s;
+}
+.sidebar-link:hover { background:rgba(74,120,136,0.13); }
+.sidebar-link .lk-icon { font-size:17px; line-height:1; }
+.sidebar-link .lk-label { font-size:8.5px; color:var(--muted); letter-spacing:0.04em; transition:color 0.2s; }
+.sidebar-link:hover .lk-label { color:var(--blue); }
+
+/* ── 콘텐츠 영역 */
+.content {
+  flex:1; min-width:0; position:relative; z-index:1;
+  display:flex; flex-direction:column; gap:var(--gap);
+}
+
+/* 날짜·시간 (오른쪽 상단) */
+.topbar {
+  position:absolute; top:0; right:0;
+  padding:12px 18px; text-align:right;
+  pointer-events:none; z-index:10;
+}
+.topbar-time {
+  display:block; font-size:20px; font-weight:500;
+  color:var(--green); letter-spacing:0.04em;
+  font-family:'Playfair Display',serif; line-height:1.2;
+}
+.topbar-date {
+  display:block; font-size:9.5px; color:var(--muted);
+  letter-spacing:0.06em; margin-top:1px;
+}
+
+/* ── 카드 공통 */
+.card {
+  background:var(--card);
+  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  border-radius:var(--radius);
+  border:1px solid rgba(170,205,175,0.45);
+  box-shadow:0 3px 18px rgba(60,96,66,0.06), 0 1px 3px rgba(60,96,66,0.04);
+  position:relative; overflow:hidden;
+}
+.card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(210,240,215,0.7),transparent);
+  pointer-events:none;
+}
+
+/* ── 상단 문장 카드 */
+.sentence-card {
+  flex: 0 0 auto;
+  display:flex; flex-direction:column;
+}
+
+.sentence-body {
+  padding:22px 70px 16px;
+  text-align:center; position:relative;
+  display:flex; flex-direction:column; align-items:center;
+  overflow-y:auto; flex:1;
+}
+.sentence-body::-webkit-scrollbar { width:3px; }
+.sentence-body::-webkit-scrollbar-thumb { background:rgba(160,200,170,0.4); border-radius:99px; }
+
+.quote-deco {
+  position:absolute; top:10px; left:18px;
+  font-family:'Playfair Display',serif;
+  font-size:64px; color:var(--green); opacity:0.08;
+  line-height:1; pointer-events:none;
+}
+
+.sentence-text {
+  font-family:'Playfair Display',serif;
+  font-size:clamp(13px,1.4vw,17px);
+  font-weight:400; line-height:1.75;
+  color:var(--ink); margin-bottom:12px;
+  word-break:keep-all; position:relative; z-index:1;
+  opacity:0; animation:fadeUp 0.8s ease forwards 0.25s;
+}
+
+.sentence-source {
+  font-size:10px; letter-spacing:0.14em; color:var(--muted);
+  opacity:0; animation:fadeUp 0.7s ease forwards 0.45s;
+}
+.sentence-source::before { content:'─  '; color:var(--green); }
+
+.sentence-foot {
+  padding:10px 18px;
+  border-top:1px solid var(--line);
+  display:flex; align-items:center; justify-content:flex-end;
+  background:linear-gradient(135deg,rgba(200,228,205,0.22),rgba(185,215,228,0.18));
+  gap:6px;
+}
+
+/* ── 하단 영역 */
+.bottom-row {
+  flex:1; min-height:0;
+  display:flex; gap:var(--gap);
+}
+
+/* ── 지식 카드 */
+.knowledge-card {
+  flex:1; min-width:0;  /* 1/3 */
+  background:var(--card-b);
+  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  border-radius:var(--radius);
+  border:1px solid rgba(150,195,215,0.42);
+  box-shadow:0 3px 18px rgba(50,88,108,0.06);
+  display:flex; flex-direction:column; overflow:hidden;
+  position:relative;
+}
+.knowledge-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(190,225,238,0.65),transparent);
+  pointer-events:none;
+}
+
+.k-head {
+  padding:9px 15px;
+  display:flex; align-items:center; justify-content:space-between;
+  flex-shrink:0;
+  background:linear-gradient(135deg,rgba(185,218,192,0.32) 0%,rgba(168,205,220,0.28) 100%);
+  border-bottom:1px solid var(--line);
+  border-radius:var(--radius) var(--radius) 0 0;
+  gap:6px;
+}
+
+.k-label { font-size:9.5px; letter-spacing:0.14em; color:var(--green); font-weight:500; }
+
+.k-body-wrap { padding:16px 20px 16px; flex:1; overflow-y:auto; }
+.k-body-wrap::-webkit-scrollbar { width:3px; }
+.k-body-wrap::-webkit-scrollbar-thumb { background:rgba(160,200,170,0.45); border-radius:99px; }
+
+.knowledge-title {
+  font-family:'Playfair Display',serif;
+  font-size:15px; font-weight:500;
+  color:var(--ink); margin-bottom:8px; line-height:1.4;
+}
+
+.knowledge-body {
+  font-size:13px; line-height:1.85;
+  color:var(--ink2); word-break:keep-all;
+}
+
+/* ── 브리핑 카드 */
+.briefing-card {
+  flex:2; min-width:0;
+  display:flex; flex-direction:column;
+}
+
+.b-head {
+  padding:14px 22px 12px;
+  display:flex; align-items:flex-end; justify-content:space-between;
+  flex-shrink:0;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(135deg,rgba(192,224,198,0.28),rgba(175,212,224,0.22));
+}
+
+.b-card-label { font-size:8px; letter-spacing:0.22em; text-transform:uppercase; color:var(--muted); display:block; margin-bottom:3px; }
+.b-h-title { font-family:'Playfair Display',serif; font-size:17px; font-weight:400; color:var(--ink); }
+
+.b-meta { text-align:right; font-size:9.5px; color:var(--muted); line-height:1.7; }
+.b-meta .btime { color:var(--green); font-size:10.5px; font-weight:500; }
+
+.b-body {
+  flex:1; padding:16px 20px; overflow-y:auto;
+  display:flex; flex-direction:column; gap:12px;
+}
+.b-body::-webkit-scrollbar { width:3px; }
+.b-body::-webkit-scrollbar-thumb { background:rgba(160,200,170,0.4); border-radius:99px; }
+
+/* 지수 그리드 */
+.data-grid {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:6px; flex-shrink:0;
+}
+.data-item {
+  background:linear-gradient(135deg,rgba(220,238,224,0.55),rgba(210,230,240,0.45));
+  border-radius:11px; padding:8px 11px;
+  border:1px solid rgba(165,200,175,0.35);
+}
+.data-lbl { font-size:7.5px; letter-spacing:0.1em; color:var(--muted); text-transform:uppercase; margin-bottom:3px; }
+.data-val-row { display:flex; align-items:baseline; gap:5px; flex-wrap:wrap; }
+.data-val { font-size:13px; font-weight:500; font-family:'Playfair Display',serif; line-height:1.2; color:var(--ink); }
+.data-chg { font-size:9px; }
+.b-up   { color:var(--red)  !important; }
+.b-down { color:var(--blue) !important; }
+
+/* 브리핑 섹션 */
+.b-sec { }
+.b-sec-title {
+  font-size:11px; font-weight:500; color:var(--ink);
+  display:flex; align-items:center; gap:5px;
+  padding-bottom:5px; border-bottom:1px solid var(--line); margin-bottom:6px;
+}
+.b-sec-body {
+  font-size:13px; line-height:1.85;
+  color:var(--ink2); word-break:keep-all;
+}
+.b-sec-body strong { color:var(--ink); font-weight:500; }
+.hl-r { color:var(--red); font-weight:500; }
+.hl-y { color:var(--yellow); font-weight:500; }
+
+/* 핵심 한 줄 */
+.key-line {
+  background:linear-gradient(135deg,rgba(90,128,96,0.09),rgba(74,120,136,0.09));
+  border:1px solid rgba(165,200,175,0.42);
+  border-left:3px solid var(--green);
+  border-radius:11px; padding:11px 15px; flex-shrink:0;
+}
+.key-line-label { font-size:8px; letter-spacing:0.18em; text-transform:uppercase; color:var(--green); margin-bottom:5px; }
+.key-line-text {
+  font-family:'Playfair Display',serif;
+  font-size:15px; font-style:italic; color:var(--ink); line-height:1.65;
+}
+.b-warn { font-size:8.5px; color:var(--muted); text-align:center; padding-top:8px; border-top:1px solid var(--line); flex-shrink:0; }
+
+/* ── 버튼 */
+.btn-row { display:flex; gap:5px; }
+.btn {
+  font-family:'Noto Serif KR',serif;
+  font-size:9px; letter-spacing:0.08em;
+  padding:6px 13px; cursor:pointer;
+  border:none; border-radius:9px;
+  transition:all 0.2s; outline:none; white-space:nowrap;
+}
+.btn-green {
+  background:linear-gradient(135deg,var(--green),var(--green-d));
+  color:#fff; box-shadow:0 2px 8px rgba(74,122,85,0.22);
+}
+.btn-green:hover { filter:brightness(1.08); transform:translateY(-1px); }
+.btn-blue { background:transparent; color:var(--blue); border:1px solid rgba(104,160,180,0.5); }
+.btn-blue:hover { background:var(--blue-bg); }
+.btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--line); }
+.btn-ghost:hover { border-color:rgba(130,144,128,0.55); color:var(--ink); }
+
+/* ── 오버레이 */
+.overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(18,32,20,0.28); z-index:100;
+  align-items:center; justify-content:center;
+  backdrop-filter:blur(7px);
+}
+.overlay.open { display:flex; }
+
+.panel-box {
+  background:rgba(247,252,248,0.96);
+  backdrop-filter:blur(20px);
+  border-radius:20px; border:1px solid rgba(170,205,175,0.5);
+  padding:28px 32px; width:500px; max-width:90vw;
+  max-height:82vh; display:flex; flex-direction:column;
+  box-shadow:0 18px 56px rgba(28,56,32,0.16);
+  animation:scaleIn 0.22s ease;
+}
+@keyframes scaleIn { from{opacity:0;transform:scale(0.95);} to{opacity:1;transform:scale(1);} }
+
+.panel-title { font-family:'Playfair Display',serif; font-size:20px; color:var(--ink); margin-bottom:5px; }
+.panel-sub { font-size:11px; color:var(--muted); margin-bottom:16px; line-height:1.65; }
+
+.input-field {
+  width:100%; background:rgba(228,242,230,0.6);
+  border:1px solid rgba(165,200,175,0.52); border-radius:11px;
+  padding:11px 14px; font-family:'Noto Serif KR',serif;
+  font-size:13px; color:var(--ink); outline:none; resize:none;
+  transition:border-color 0.2s; margin-bottom:9px;
+}
+.input-field:focus { border-color:var(--green); }
+.input-field::placeholder { color:rgba(130,144,128,0.65); font-style:italic; }
+
+.panel-foot { display:flex; gap:8px; justify-content:flex-end; margin-top:4px; flex-shrink:0; }
+.list-scroll { flex:1; overflow-y:auto; margin-bottom:12px; }
+.list-scroll::-webkit-scrollbar { width:3px; }
+.list-scroll::-webkit-scrollbar-thumb { background:rgba(160,200,170,0.5); }
+.list-item { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); }
+.list-item:last-child { border-bottom:none; }
+.list-text { font-size:12.5px; line-height:1.55; flex:1; color:var(--ink); }
+.list-src  { font-size:10px; color:var(--muted); margin-top:2px; }
+.btn-del   { background:none; border:none; color:rgba(160,200,170,0.7); cursor:pointer; font-size:16px; padding:0 4px; flex-shrink:0; transition:color 0.2s; }
+.btn-del:hover { color:#B05050; }
+
+/* 애니메이션 */
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+.fade-out { animation:fo 0.28s ease forwards !important; }
+@keyframes fo { to{opacity:0;transform:translateY(-7px);} }
+.fade-in-new { animation:fi 0.38s ease forwards !important; }
+@keyframes fi { from{opacity:0;transform:translateY(7px);} to{opacity:1;transform:translateY(0);} }
+
+/* 토스트 */
+.toast {
+  position:fixed; bottom:22px; left:50%;
+  transform:translateX(-50%) translateY(14px);
+  background:linear-gradient(135deg,var(--green),var(--blue));
+  color:#fff; font-size:11px; letter-spacing:0.12em;
+  padding:9px 20px; border-radius:99px; opacity:0;
+  transition:all 0.3s; pointer-events:none; z-index:999;
+  box-shadow:0 4px 16px rgba(50,88,70,0.22);
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- 사이드바 -->
+<aside class="sidebar">
+  <div class="sidebar-links">
+    <a class="sidebar-link" href="https://docs.google.com/spreadsheets/d/15dGtQkYbsT7wB3RLLGZlQCPFC4e4nhjGlLjuGLT4FzM/edit?gid=325959495#gid=325959495" target="_blank">
+      <span class="lk-icon">📓</span><span class="lk-label">일기</span>
+    </a>
+    <a class="sidebar-link" href="https://ticktick.com/webapp/#q/all/tasks" target="_blank">
+      <span class="lk-icon">✅</span><span class="lk-label">일정</span>
+    </a>
+    <a class="sidebar-link" href="https://gemini.google.com" target="_blank">
+      <span class="lk-icon" style="display:flex;align-items:center;justify-content:center;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ggrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%"   stop-color="#4285F4"/>
+              <stop offset="40%"  stop-color="#8B5CF6"/>
+              <stop offset="100%" stop-color="#EC4899"/>
+            </linearGradient>
+          </defs>
+          <path d="M12 2C12 2 13.5 7.5 19 12C13.5 16.5 12 22 12 22C12 22 10.5 16.5 5 12C10.5 7.5 12 2 12 2Z" fill="url(#ggrad)"/>
+        </svg>
+      </span>
+      <span class="lk-label">제미나이</span>
+    </a>
+    <a class="sidebar-link" href="https://mail.google.com" target="_blank">
+      <span class="lk-icon">✉️</span><span class="lk-label">메일</span>
+    </a>
+  </div>
+</aside>
+
+<!-- 콘텐츠 -->
+<div class="content">
+
+  <!-- 날짜·시간 (오른쪽 상단) -->
+  <div class="topbar">
+    <span class="topbar-time" id="clockTime">--:--</span>
+    <span class="topbar-date" id="clockDate">----</span>
+  </div>
+
+  <!-- 상단: 오늘의 지혜 -->
+  <div class="card sentence-card">
+    <div class="sentence-body">
+      <div class="quote-deco">"</div>
+      <p class="sentence-text" id="sentenceText"></p>
+      <p class="sentence-source" id="sentenceSource"></p>
+    </div>
+    <div class="sentence-foot">
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="nextSentence()">오늘의 지혜</button>
+        <button class="btn btn-ghost" onclick="openOverlay('add-sentence')">문장 추가</button>
+        <button class="btn btn-ghost" onclick="openOverlay('list-sentence')">목록</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 하단: 지식 + 브리핑 -->
+  <div class="bottom-row">
+
+    <!-- 오늘의 지식 -->
+    <div class="knowledge-card">
+      <div class="k-head">
+        <span class="k-label">🌿 오늘의 지식</span>
+        <div class="btn-row">
+          <button class="btn btn-blue" style="padding:5px 11px;font-size:8.5px;" onclick="nextKnowledge()">오늘의 지식</button>
+          <button class="btn btn-ghost" style="padding:5px 11px;font-size:8.5px;" onclick="openOverlay('add-knowledge')">지식 추가</button>
+          <button class="btn btn-ghost" style="padding:5px 11px;font-size:8.5px;" onclick="openOverlay('list-knowledge')">목록</button>
+        </div>
+      </div>
+      <div class="k-body-wrap">
+        <div class="knowledge-title" id="knowledgeTitle"></div>
+        <div class="knowledge-body" id="knowledgeBody"></div>
+      </div>
+    </div>
+
+    <!-- 경제 브리핑 -->
+    <div class="card briefing-card">
+      <div class="b-head">
+        <div>
+          <span class="b-card-label">Economic Briefing · Daily</span>
+          <div class="b-h-title">브리핑</div>
+        </div>
+  
+      </div>
+      <div class="b-body" id="briefingBody">
+
+        <div class="data-grid">
+          <div class="data-item"><div class="data-lbl">코스피</div><div class="data-val-row"><div class="data-val b-up">7,612</div><div class="data-chg b-up">▲ +0.8%</div></div></div>
+          <div class="data-item"><div class="data-lbl">코스닥</div><div class="data-val-row"><div class="data-val b-up">1,198</div><div class="data-chg b-up">▲ +0.4%</div></div></div>
+          <div class="data-item"><div class="data-lbl">원·달러</div><div class="data-val-row"><div class="data-val">1,498</div><div class="data-chg b-down">▼ -9원</div></div></div>
+          <div class="data-item"><div class="data-lbl">S&P 500</div><div class="data-val-row"><div class="data-val b-up">5,842</div><div class="data-chg b-up">▲ +0.3%</div></div></div>
+          <div class="data-item"><div class="data-lbl">나스닥</div><div class="data-val-row"><div class="data-val b-up">18,920</div><div class="data-chg b-up">▲ +0.5%</div></div></div>
+          <div class="data-item"><div class="data-lbl">WTI</div><div class="data-val-row"><div class="data-val">$71.4</div><div class="data-chg b-down">▼ -0.6%</div></div></div>
+        </div>
+
+        <div class="b-sec">
+          <div class="b-sec-title">🌍 세계 정세</div>
+          <div class="b-sec-body">미·이란 협상 불확실성 <span class="hl-r">재부각</span>. 미국이 이란에 군사 공격을 재개하면서 평화협상 진전에 의문. 중동 리스크 확대로 유가 장중 급등 후 반락. 아부다비 국부펀드 미 증시 수조원 차익 실현 중.<br><br><strong>포트폴리오:</strong> 한화에어로스페이스·한화시스템 단기 수혜 가능.</div>
+        </div>
+
+        <div class="b-sec">
+          <div class="b-sec-title">📈 한국 증시</div>
+          <div class="b-sec-body">한국은행 기준금리 <span class="hl-y">2.5% 8연속 동결</span>. GDP 성장률 <span class="hl-r">2.0%→2.6%</span> 대폭 상향. 반도체 수출 호조 배경. 코스피 기관·외국인 동반 순매수 강세 출발.<br><br><strong>포트폴리오:</strong> KODEX 200·삼성전자 우호적.</div>
+        </div>
+
+        <div class="b-sec">
+          <div class="b-sec-title">📊 미장 & 선물</div>
+          <div class="b-sec-body">미 증시 소폭 상승 마감. 필라델피아 반도체지수 AI 수요 기대 강세. KS200 선물 외인 소폭 순매수 전환. 연준 하반기 <span class="hl-y">2회 금리인하</span> 기대 유지.</div>
+        </div>
+
+        <div class="b-sec">
+          <div class="b-sec-title">💸 금리 · 환율 · 유가</div>
+          <div class="b-sec-body">미 10년물 <span class="hl-r">4.48%</span> / 30년물 4.92%. 원·달러 <span class="hl-y">1,498원</span> 소폭 하락. WTI $71.4 / 브렌트유 $75.2.<br><br><strong>포트폴리오:</strong> 환율 하락 외국인 수급 우호. SOL 원자력SMR 주목.</div>
+        </div>
+
+        <div class="b-sec">
+          <div class="b-sec-title">💼 포트폴리오 영향</div>
+          <div class="b-sec-body">
+            <strong>삼성전자·삼성전자우</strong> — 반도체 수출 호조 ↑<br>
+            <strong>KODEX 200</strong> — 코스피 강세 추종, 우호적<br>
+            <strong>한화에어로·한화시스템</strong> — <span class="hl-r">방산 수혜</span> 단기 주목<br>
+            <strong>TIGER 원자력·AI전력기기</strong> — AI 전력 테마 중장기 우호<br>
+            <strong>현대건설</strong> — 중동 불확실성 <span class="hl-y">중립</span><br>
+            <strong>버크셔 B</strong> — 달러 약세, 영향 제한적
+          </div>
+        </div>
+
+        <div class="key-line">
+          <div class="key-line-label">⚡ 오늘 핵심 한 줄</div>
+          <div class="key-line-text">한은 8연속 동결·성장률 상향이 증시 하방을 지지하나, 중동 변수 재부각으로 방산·에너지 종목 선별 주목이 오늘의 키워드.</div>
+        </div>
+
+        <div class="b-warn">⚠️ 본 브리핑은 투자 조언이 아닌 정보 제공 목적입니다.</div>
+
+      </div>
+    </div>
+
+  </div><!-- /bottom-row -->
+</div><!-- /content -->
+
+<!-- 패널: 문장 추가 -->
+<div class="overlay" id="ov-add-sentence" onclick="closeOverlay(event,'ov-add-sentence')">
+  <div class="panel-box">
+    <div class="panel-title">문장 추가</div>
+    <div class="panel-sub">한 줄에 하나씩 엔터로 구분 · 출처는 <span style="color:var(--green);">문장 // 출처</span> 형식</div>
+    <textarea class="input-field" id="newSentenceText" rows="9" placeholder="삶은 가까이서 보면 비극이다 // 찰리 채플린&#10;시작하기 위해 위대할 필요는 없다&#10;..."></textarea>
+    <div class="panel-foot">
+      <button class="btn btn-ghost" onclick="closeOverlay(null,'ov-add-sentence')">취소</button>
+      <button class="btn btn-green" onclick="addSentences()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- 패널: 문장 목록 -->
+<div class="overlay" id="ov-list-sentence" onclick="closeOverlay(event,'ov-list-sentence')">
+  <div class="panel-box">
+    <div class="panel-title" style="margin-bottom:14px;">저장된 문장</div>
+    <div class="list-scroll" id="sentenceList"></div>
+    <div class="panel-foot">
+      <button class="btn btn-ghost" onclick="closeOverlay(null,'ov-list-sentence')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 패널: 지식 추가 -->
+<div class="overlay" id="ov-add-knowledge" onclick="closeOverlay(event,'ov-add-knowledge')">
+  <div class="panel-box">
+    <div class="panel-title">지식 추가</div>
+    <div class="panel-sub">제목과 본문을 입력해요</div>
+    <input class="input-field" id="newKnowledgeTitle" type="text" placeholder="제목 (예: 파킨슨의 법칙)">
+    <textarea class="input-field" id="newKnowledgeBody" rows="6" placeholder="본문 내용을 입력하세요..."></textarea>
+    <div class="panel-foot">
+      <button class="btn btn-ghost" onclick="closeOverlay(null,'ov-add-knowledge')">취소</button>
+      <button class="btn btn-green" onclick="addKnowledge()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- 패널: 지식 목록 -->
+<div class="overlay" id="ov-list-knowledge" onclick="closeOverlay(event,'ov-list-knowledge')">
+  <div class="panel-box">
+    <div class="panel-title" style="margin-bottom:14px;">저장된 지식</div>
+    <div class="list-scroll" id="knowledgeList"></div>
+    <div class="panel-foot">
+      <button class="btn btn-ghost" onclick="closeOverlay(null,'ov-list-knowledge')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const S_KEY='dailySentences', K_KEY='dailyKnowledge';
+const defaultSentences=[
+  {text:"우리는 우리가 반복해서 하는 것들로 만들어진다. 탁월함은 행동이 아니라 습관이다.",source:"아리스토텔레스"},
+  {text:"삶은 가까이서 보면 비극이지만, 멀리서 보면 희극이다.",source:"찰리 채플린"},
+  {text:"지금 이 순간에도 당신은 충분히 잘 하고 있다.",source:"Brené Brown"},
+  {text:"두려움이 있는 곳에 용기가 있고, 고통이 있는 곳에 성장이 있다.",source:"Carl Jung"},
+  {text:"당신이 통제할 수 없는 것에 에너지를 쓰지 마라. 당신이 할 수 있는 것에 집중하라.",source:"에픽테토스"},
+  {text:"좋은 판단은 경험에서 나오고, 경험은 나쁜 판단에서 나온다.",source:"Will Rogers"},
+  {text:"시작하기 위해 위대할 필요는 없다. 하지만 위대해지기 위해서는 시작해야 한다.",source:"Les Brown"},
+  {text:"모든 전문가는 한때 초보자였다.",source:"Helen Hayes"},
+  {text:"당신의 시간은 한정되어 있다. 다른 사람의 삶을 사는 데 낭비하지 마라.",source:"Steve Jobs"},
+  {text:"배움을 멈추는 사람은 스무 살이든 여든 살이든 늙은 것이다. 계속 배우는 사람은 언제나 젊다.",source:"Henry Ford"},
+];
+const defaultKnowledge=[
+  {title:"파킨슨의 법칙",body:"일은 주어진 시간을 전부 채울 만큼 늘어난다. 마감이 2주면 2주가 걸리고, 하루면 하루 안에 끝난다. 시간을 의도적으로 압축하면 집중력이 높아진다."},
+  {title:"더닝-크루거 효과",body:"능력이 낮을수록 자신의 실력을 과대평가하고, 능력이 높아질수록 오히려 자신을 과소평가하는 경향. 진짜 전문가는 '모르는 것'을 더 많이 안다."},
+  {title:"매몰 비용의 오류",body:"이미 쓴 돈과 시간 때문에 포기하지 못하는 심리. 합리적 결정은 미래의 가치만을 기준으로 해야 한다. 과거의 비용은 이미 사라졌다."},
+  {title:"72의 법칙",body:"원금이 두 배가 되는 기간 = 72 ÷ 연이율. 연 6% 수익이면 72÷6=12년 후 두 배. 복리의 힘을 빠르게 계산하는 금융 기초 공식."},
+  {title:"오컴의 면도날",body:"같은 현상을 설명하는 이론이 여러 개라면, 가장 단순한 것이 정답일 가능성이 높다. 불필요한 가정을 잘라내는 사고의 원칙."},
+];
+
+const loadS=()=>{const r=localStorage.getItem(S_KEY);return r?JSON.parse(r):[...defaultSentences];};
+const saveS=a=>localStorage.setItem(S_KEY,JSON.stringify(a));
+const loadK=()=>{const r=localStorage.getItem(K_KEY);return r?JSON.parse(r):[...defaultKnowledge];};
+const saveK=a=>localStorage.setItem(K_KEY,JSON.stringify(a));
+
+function tick(){
+  const now=new Date();
+  const days=['일','월','화','수','목','금','토'];
+  document.getElementById('clockTime').textContent=
+    `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  document.getElementById('clockDate').textContent=
+    `${now.getFullYear()}.${now.getMonth()+1}.${now.getDate()} (${days[now.getDay()]})`;
+}
+
+let curS=0;
+function showSentence(idx,animate){
+  const arr=loadS();if(!arr.length)return;
+  idx=((idx%arr.length)+arr.length)%arr.length;curS=idx;
+  const el=document.getElementById('sentenceText');
+  const src=document.getElementById('sentenceSource');
+  const set=()=>{el.textContent=arr[idx].text;src.textContent=arr[idx].source||'';};
+  if(animate){
+    el.classList.add('fade-out');src.classList.add('fade-out');
+    setTimeout(()=>{
+      el.classList.remove('fade-out');el.classList.add('fade-in-new');
+      src.classList.remove('fade-out');src.classList.add('fade-in-new');
+      set();
+      setTimeout(()=>{el.classList.remove('fade-in-new');src.classList.remove('fade-in-new');},380);
+    },280);
+  }else set();
+}
+function nextSentence(){
+  const arr=loadS();if(arr.length<=1){showSentence(0,true);return;}
+  let n;do{n=Math.floor(Math.random()*arr.length);}while(n===curS);
+  showSentence(n,true);
+}
+function addSentences(){
+  const raw=document.getElementById('newSentenceText').value;
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  if(!lines.length){toast('문장을 입력해주세요');return;}
+  const arr=loadS();let added=0;
+  lines.forEach(line=>{const p=line.split('//');const t=p[0].trim();if(t){arr.push({text:t,source:p[1]?p[1].trim():''});added++;}});
+  saveS(arr);document.getElementById('newSentenceText').value='';
+  closeOverlay(null,'ov-add-sentence');toast(`${added}개 문장 추가 ✓`);
+  showSentence(arr.length-1,true);
+}
+
+let curK=0;
+function showKnowledge(idx){
+  const arr=loadK();if(!arr.length)return;
+  idx=((idx%arr.length)+arr.length)%arr.length;curK=idx;
+  document.getElementById('knowledgeTitle').textContent=arr[idx].title;
+  document.getElementById('knowledgeBody').textContent=arr[idx].body;
+}
+function nextKnowledge(){
+  const arr=loadK();if(arr.length<=1){showKnowledge(0);return;}
+  let n;do{n=Math.floor(Math.random()*arr.length);}while(n===curK);
+  showKnowledge(n);
+}
+function addKnowledge(){
+  const title=document.getElementById('newKnowledgeTitle').value.trim();
+  const body=document.getElementById('newKnowledgeBody').value.trim();
+  if(!title||!body){toast('제목과 내용을 입력해주세요');return;}
+  const arr=loadK();arr.push({title,body});saveK(arr);
+  document.getElementById('newKnowledgeTitle').value='';
+  document.getElementById('newKnowledgeBody').value='';
+  closeOverlay(null,'ov-add-knowledge');toast('지식 추가 ✓');
+  showKnowledge(arr.length-1);
+}
+
+function renderSentenceList(){
+  const arr=loadS();const el=document.getElementById('sentenceList');
+  if(!arr.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0;">아직 문장이 없어요</div>';return;}
+  el.innerHTML=arr.map((s,i)=>`<div class="list-item"><div style="flex:1"><div class="list-text">${s.text}</div>${s.source?`<div class="list-src">${s.source}</div>`:''}</div><button class="btn-del" onclick="delSentence(${i})">×</button></div>`).join('');
+}
+function delSentence(i){const arr=loadS();arr.splice(i,1);saveS(arr);renderSentenceList();showSentence(curS>=arr.length?0:curS,false);}
+
+function renderKnowledgeList(){
+  const arr=loadK();const el=document.getElementById('knowledgeList');
+  if(!arr.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0;">아직 지식이 없어요</div>';return;}
+  el.innerHTML=arr.map((k,i)=>`<div class="list-item"><div style="flex:1"><div class="list-text" style="font-weight:500;">${k.title}</div><div class="list-src" style="font-size:11px;margin-top:3px;">${k.body.slice(0,50)}...</div></div><button class="btn-del" onclick="delKnowledge(${i})">×</button></div>`).join('');
+}
+function delKnowledge(i){const arr=loadK();arr.splice(i,1);saveK(arr);renderKnowledgeList();showKnowledge(curK>=arr.length?0:curK);}
+
+function openOverlay(id){
+  document.getElementById('ov-'+id).classList.add('open');
+  if(id==='list-sentence')renderSentenceList();
+  if(id==='list-knowledge')renderKnowledgeList();
+}
+function closeOverlay(e,id){
+  if(e&&e.target!==document.getElementById(id))return;
+  document.getElementById(id).classList.remove('open');
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(o=>o.classList.remove('open'));
+  if((e.key===' '||e.key==='ArrowRight')&&!document.querySelector('.overlay.open')){e.preventDefault();nextSentence();}
+});
+
+tick();setInterval(tick,15000);
+const sa=loadS();showSentence(Math.floor(Math.random()*sa.length),false);
+const ka=loadK();showKnowledge(Math.floor(Math.random()*ka.length));
+</script>
+</body>
+</html>
